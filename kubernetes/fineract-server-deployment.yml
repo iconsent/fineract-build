@@ -1,0 +1,103 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: fineract-server
+  name: fineract-server
+spec:
+  ports:
+  - protocol: TCP
+    port: 8443
+    targetPort: 8443
+  selector:
+    app: fineract-server
+    tier: backend
+  type: LoadBalancer
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fineract-server
+  labels:
+    app: fineract-server
+spec:
+  selector:
+    matchLabels:
+      app: fineract-server
+      tier: backend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: fineract-server
+        tier: backend
+    spec:
+      containers:
+      - name: fineract-server
+        image: iconsent/fineract:latest
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+          requests:
+            cpu: "200m"
+            memory: "0.5Gi"
+        livenessProbe:
+          httpGet:
+            path: /fineract-provider/actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /fineract-provider/actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 1
+        env:
+        - name: DRIVERCLASS_NAME
+          value: org.drizzle.jdbc.DrizzleDriver
+        - name: PROTOCOL
+          value: jdbc
+        - name: SUB_PROTOCOL
+          value: mysql:thin
+        - name: fineract_tenants_driver
+          value: org.drizzle.jdbc.DrizzleDriver
+        - name: fineract_tenants_url
+          value: jdbc:mysql:thin://fineractmysql:3306/fineract_tenants
+        - name: fineract_tenants_uid
+          valueFrom:
+            secretKeyRef:
+              name: fineract-tenants-db-secret
+              key: username
+        - name: fineract_tenants_pwd
+          valueFrom:
+            secretKeyRef:
+              name: fineract-tenants-db-secret
+              key: password
+        - name: FINERACT_DEFAULT_TENANTDB_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: fineractmysql-config
+              key: hostname
+        - name: FINERACT_DEFAULT_TENANTDB_PORT
+          value: '3306'
+        - name: FINERACT_DEFAULT_TENANTDB_UID
+          valueFrom:
+            secretKeyRef:
+              name: fineract-tenants-db-secret
+              key: username
+        - name: FINERACT_DEFAULT_TENANTDB_PWD
+          valueFrom:
+            secretKeyRef:
+              name: fineract-tenants-db-secret
+              key: password
+        - name: FINERACT_DEFAULT_TENANTDB_CONN_PARAMS
+          value: ''
+        ports:
+        - containerPort: 8443
+          name: fineract-server
