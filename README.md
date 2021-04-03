@@ -9,6 +9,9 @@ This repo contains only the build scripts. For details of fineract please see th
 
 The container image is available at (docker hub)[https://hub.docker.com/r/iconsent/fineract]).
 
+The kubernetes configmap and secrects are created to store the configurations related to mysql database.
+The deployment files and the scripts for creating the kubernetes configmap and secrects are in the kubernetes folder.
+
 Note: The CI process is currently manual, there is no automated webhook for trigerring the build when apache/fineract 
 project is updated. Unless someone asks for it, the schedular will not be added.
 
